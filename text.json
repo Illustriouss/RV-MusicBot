@@ -1,0 +1,8 @@
+{
+  "ready": "Ready!",
+  "reconnect": "Reconnecting...",
+  "disconnect": "Disconnected!",
+  "invalidCommand": "You need to enter a valid command!",
+  "voiceChannel": "You need to be in a voice channel to play music!",
+  "permChannel": "I need the permissions to join and speak in your voice channel!"
+}
