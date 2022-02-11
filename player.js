@@ -2,14 +2,17 @@ const ytdl = require("ytdl-core-discord");
 const ytpl = require('ytpl');
 
 module.exports = class Player {
-  constructor() {
+
+  constructor(message) {
     this.ytdl = ytdl;
-    this.voiceChannel = null;
-    this.textChannel = null;
-    this.connection = null;
+    this.voiceChannel = message.member.voice.channel;
+    this.textChannel = message.channel;
     this.songs = [];
     this.volume = 5;
     this.playing = false;
+    this.connection = null;
+    this.dispatcher = null;
+    this.leaveTimer = null;
   }
 
   async add(url) {
@@ -19,23 +22,22 @@ module.exports = class Player {
         await this.addSong(item.shortUrl);
       }
     } else {
-      return await this.addSong(url);
+      await this.addSong(url);
     }
   }
 
   async addSong(url) {
     const songInfo = await this.ytdl.getInfo(url);
-    const song = {
+    this.songs.push({
       title: songInfo.videoDetails.title,
       url: songInfo.videoDetails.video_url,
-    };
-    this.songs.push(song);
-    return await song.title;
+      length: songInfo.videoDetails.lengthSeconds
+    });
   }
 
   async start() {
     if (this.playing) {
-      message.channel.send(`**${title}** has been added to the queue!`);
+      this.textChannel.send(`**${this.songs[this.songs.length-1].title}** has been added to the queue!`);
       return;
     }
     this.connection = await this.voiceChannel.join();
@@ -46,19 +48,19 @@ module.exports = class Player {
 
   async play() {
     if (!this.songs[0]) {
-      this.voiceChannel.leave();
+      // this.voiceChannel.leave();
       this.playing = false;
       return;
     }
 
-    const dispatcher = this.connection
+    this.dispatcher = this.connection
     .play(await ytdl(this.songs[0].url), {type: 'opus'})
     .on("finish", () => {
       this.songs.shift();
       this.play();
     })
     .on("error", error => console.error(error));
-    dispatcher.setVolumeLogarithmic(this.volume / 5);
+    this.dispatcher.setVolumeLogarithmic(this.volume / 5);
   }
 
   queue() {
@@ -71,6 +73,7 @@ module.exports = class Player {
 
   skip() {
     this.connection.dispatcher.end();
+    this.textChannel.send(`Skipping to **${this.songs[0].title}**`);
   }
 
   skipto(index) {
@@ -86,5 +89,16 @@ module.exports = class Player {
 
   hasQueue() {
     return this.songs.length > 1;
+  }
+
+  nowPlaying() {
+    const song = this.songs[0];
+    if (this.playing && song) {
+      const currentTime = Math.round(this.dispatcher.count/60/60);
+      const songLength = Math.round(song.length/60);
+      this.textChannel.send(
+        `now playing **${song.title}** (~${currentTime}/${songLength} minutes)`
+      );
+    }
   }
 }

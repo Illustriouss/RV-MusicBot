@@ -6,8 +6,16 @@ module.exports = class Validator {
 
   }
 
-  getURL(msg) {
-    return msg.content.split(" ")[1];
+  isValidURL(msg){
+    let url;
+
+    try {
+      url = new URL(msg);
+    } catch (_) {
+      return false;
+    }
+
+    return url.protocol === "http:" || url.protocol === "https:";
   }
 
   hasPermission(msg, prefix) {
@@ -15,7 +23,6 @@ module.exports = class Validator {
     const permissions = voiceChannel.permissionsFor(msg.client.user);
 
     if (msg.author.bot) {
-      console.log("Message by bot, ignore");
       return false;
     }
 
